@@ -1,0 +1,6 @@
+node_modules/
+dist/
+semantic/
+typings/
+# Some editors like to build inline
+src/*.js*
