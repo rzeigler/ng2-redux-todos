@@ -1,3 +1,4 @@
+import {Observable} from "rxjs";
 import {Store} from "@ngrx/store";
 import {AppState} from "./app.state";
 
@@ -28,4 +29,9 @@ export function dispatch(store: Store<any>) {
     return function (v: any) {
         store.dispatch(v);
     };
+}
+
+export function logErrorRecovery(e: any): Observable<Action> {
+    console.error(e);
+    return Observable.empty<Action>();
 }

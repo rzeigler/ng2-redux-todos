@@ -4,6 +4,7 @@
     "webpack-env": "registry:dt/webpack-env#1.12.2+20160316155526"
   },
   "dependencies": {
+    "dexie": "registry:dt/dexie#0.0.0+20160627023137",
     "ramda": "registry:npm/ramda#0.21.0+20160531162943"
   }
 }

@@ -1,4 +1,8 @@
-<form [formGroup]="loginForm" (ngSubmit)="loginGo_Sink($event)">
-  <input formControlName="username" type="text" placeholder="User">
-  <button type="submit" class="button-primary">Go</button>
-</form>
+<div class="hero popout small container">
+    <form [formGroup]="loginForm" (ngSubmit)="submit$_Sink($event)">
+        <div class="centered">
+            <input class="" formControlName="username" type="text" placeholder="User">
+            <button class="" type="submit" class="button-primary">Go</button>
+        </div>
+    </form>
+</div>

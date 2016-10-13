@@ -12,8 +12,8 @@ import {LoginComponent} from "./login.component";
 import {TodosComponent} from "./todos.component";
 import {AppState, defaultAppState} from "./app.state";
 import {reducer} from "./reducer.state";
-import {SessionManager} from "./session.state";
-
+import {SessionManager} from "./session.service";
+import {NotesService} from "./notes.service";
 
 @NgModule({
     imports: [
@@ -39,7 +39,8 @@ import {SessionManager} from "./session.state";
     bootstrap: [AppComponent],
     providers: [
         {provide: LocationStrategy, useClass: HashLocationStrategy},
-        {provide: SessionManager, useClass: SessionManager}
+        {provide: SessionManager, useClass: SessionManager},
+        {provide: NotesService, useClass: NotesService}
     ]
 })
 export class AppModule { }

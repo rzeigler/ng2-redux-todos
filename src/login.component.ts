@@ -4,9 +4,9 @@ import {Component, Inject} from "@angular/core";
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {Store} from "@ngrx/store";
 import {ReactiveComponent, LifeCycleNotificationEvent, ReactiveSource, second, bindStore} from "ng2-reactor";
-import {AppState, user} from "./app.state";
-import {Action, lensing, dispatch} from "./reducer.state";
-import {SessionManager} from "./session.state";
+import {ReducerState, user} from "./app.state";
+import {Action, lensing} from "./reducer.state";
+import {SessionManager} from "./session.service";
 
 @Component({
     selector: "login",
@@ -15,24 +15,22 @@ import {SessionManager} from "./session.state";
 export class LoginComponent extends ReactiveComponent {
     private loginForm: FormGroup;
 
-    @ReactiveSource() private loginGo: Observable<void>;
+    @ReactiveSource() private submit$: Observable<void>;
 
-    constructor(fb: FormBuilder, store: Store<AppState>, session: SessionManager) {
+    constructor(fb: FormBuilder, store: Store<ReducerState>, session: SessionManager) {
         super();
 
         this.loginForm = fb.group({
             "username": ["", Validators.required]
         });
 
-        this.lifeCycle$.subscribe(console.log.bind(console));
-        this.loginEvents(session)
-            // TODO: Why is cast necessary?
+        this.loginEvents$(session)
             .takeUntil(<any>this.onDestroy$)
-            .subscribe(bindStore(store), R.always(null), () => console.log("login ended"));
+            .subscribe(bindStore(store));
     }
 
-    private loginEvents(session: SessionManager): Observable<Action> {
-        return this.loginGo.withLatestFrom(this.loginForm.controls["username"].valueChanges, second)
+    private loginEvents$(session: SessionManager): Observable<Action> {
+        return this.submit$.withLatestFrom(this.loginForm.controls["username"].valueChanges, second)
             .exhaustMap(session.login);
     }
 }

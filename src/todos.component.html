@@ -1,3 +1,14 @@
-<div>
-    TODOs go here
+<div class="container popout hero">
+    <div class="u-pull-left four columns tall">
+        <ul class="listbox">
+            <li *ngFor="let list of todoLists"><a>{{list.name}}</a><button class="button" (click)="dropList$_Sink(list.id)">x</button></li>
+        </ul>
+        <form [formGroup]="addListForm" (ngSubmit)="addList$_Sink($event)">
+            <input formControlName="addListName" type="text" placeholder="name" />
+            <button type="submit" class="button-primary">+</button>
+        </form>
+    </div>
+</div>
+<div class="container">
+  <a (click)="logout$_Sink($event)">Logout</a>
 </div>
