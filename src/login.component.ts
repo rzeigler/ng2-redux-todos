@@ -25,7 +25,7 @@ export class LoginComponent extends ReactiveComponent {
         });
 
         this.loginEvents$(session)
-            .takeUntil(<any>this.onDestroy$)
+            .takeUntil(this.onDestroy$)
             .subscribe(bindStore(store));
     }
 

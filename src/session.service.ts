@@ -3,7 +3,7 @@ import {Injectable} from "@angular/core";
 import {Observable} from "rxjs";
 import { go } from "@ngrx/router-store";
 import {Action, lensing} from "./reducer.state";
-import {user, lists, activeListId, activeListTodos, db} from "./app.state";
+import {user, lists, activeListTodos, db} from "./app.state";
 
 @Injectable()
 export class SessionManager {
@@ -17,7 +17,6 @@ export class SessionManager {
             R.compose(
                 R.set(user, null),
                 R.set(lists, []),
-                R.set(activeListId, null),
                 R.set(activeListTodos, null)
             )
         )).concat(Observable.of(go(["login"])));

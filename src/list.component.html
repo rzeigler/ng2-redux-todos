@@ -1,0 +1,15 @@
+<div>
+  <ul class="listbox">
+    <li *ngFor="let todo of todos;trackBy:todo?.id" >
+      <label (click)="toggleTodo$_Sink(todo.id)">{{todo.name}}
+        <input type="checkbox" disabled="true" [ngModel]="todo.completed"/>
+      </label>
+      <!-- This is kept outside to prevent clicks from triggering the toggle -->
+      <button (click)="deleteTodo$_Sink(todo.id)" class="button">x</button>
+    </li>
+  </ul>
+  <form [formGroup]="addTodoForm" (ngSubmit)="addTodo$_Sink($event)">
+      <input formControlName="addTodoName" type="text" placeholder="name" />
+      <button type="submit" class="button-primary">+</button>
+  </form>
+</div>

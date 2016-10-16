@@ -1,12 +1,15 @@
 <div class="container popout hero">
     <div class="u-pull-left four columns tall">
         <ul class="listbox">
-            <li *ngFor="let list of todoLists"><a>{{list.name}}</a><button class="button" (click)="dropList$_Sink(list.id)">x</button></li>
+            <li *ngFor="let list of todoLists"><a routerLink="/todos/{{list.id}}" routerLinkActive="active">{{list.name}}</a><button class="button" (click)="dropList$_Sink(list.id)">x</button></li>
         </ul>
         <form [formGroup]="addListForm" (ngSubmit)="addList$_Sink($event)">
             <input formControlName="addListName" type="text" placeholder="name" />
             <button type="submit" class="button-primary">+</button>
         </form>
+    </div>
+    <div class="eight columns">
+      <router-outlet></router-outlet>
     </div>
 </div>
 <div class="container">

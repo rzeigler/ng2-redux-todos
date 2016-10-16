@@ -26,8 +26,6 @@ export class TodosComponent extends ReactiveComponent {
     constructor(fb: FormBuilder, notes: NotesService, store: Store<ReducerState>, session: SessionManager) {
         super();
 
-        (<any>window).todos = this;
-
         this.addListForm = fb.group({
             addListName: ["", Validators.required]
         });
@@ -35,11 +33,11 @@ export class TodosComponent extends ReactiveComponent {
         const appState$ = store.map(appState);
 
         appState$.map(s => R.view(lists, s))
-            .takeUntil(<any>this.onDestroy$)
+            .takeUntil(this.onDestroy$)
             .subscribe(bindProperty("todoLists", this));
 
         appState$.map(s => R.view(addListView, s))
-            .takeUntil(<any>this.onDestroy$)
+            .takeUntil(this.onDestroy$)
             .subscribe(bindFormValues(["addListName"], <any>this.addListForm));
 
         const actions$ = this.databaseOpen$(appState$, notes)
@@ -51,7 +49,7 @@ export class TodosComponent extends ReactiveComponent {
             .merge(this.logoutSubmit$(session));
 
         actions$
-            .takeUntil(<any>this.onDestroy$)
+            .takeUntil(this.onDestroy$)
             .subscribe(bindStore(store));
     }
 
@@ -77,12 +75,12 @@ export class TodosComponent extends ReactiveComponent {
     private listLoad$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
         const appStateReady$ = appState$.filter(v => Boolean(R.view(db, v)));
         // The first time we have a database after initialization load the lists
-        return <any>this.onInit$
+        return this.onInit$
             .combineLatest(appStateReady$, second)
             .take(1)
             .exhaustMap(appState => {
                 const handle = R.view<any, Dexie>(db, appState);
-                const owner = R.view<any, string>(user, appState);
+                const owner = R.view<any, number>(user, appState);
                 return notes.lists(handle, owner);
             })
             .map(ls => lensing(
@@ -120,7 +118,7 @@ export class TodosComponent extends ReactiveComponent {
     private dropListSubmit$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
         const db$: Observable<Dexie> = appState$.map(v => R.view(db, v));
         return this.dropList$
-            .withLatestFrom(db$, (id: string, handle: Dexie) => ({ id, handle }))
+            .withLatestFrom(db$, (id: number, handle: Dexie) => ({ id, handle }))
             .switchMap(data => notes.dropList(data.handle, data.id)
                 .map(R.always(lensing(
                     R.over(lists, R.filter((list: TodoList) => list.id !== data.id))

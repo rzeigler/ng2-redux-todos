@@ -3,28 +3,33 @@ import {RouterState} from "@ngrx/router-store";
 import Dexie from "dexie";
 
 export interface TodoList {
-    id: string;
-    owner: string;
+    id: number;
+    owner: number;
     name: string;
 }
 
 export interface Todo {
-    id: string;
-    parent_id: string;
-    list_id: string;
+    id: number;
+    parent_id: number | null;
+    list_id: number;
     name: string;
     notes: string;
+    completed: boolean;
 }
 
 export interface AddListView {
     addListName: string;
 }
 
+export interface AddTodoView {
+    addTodoName: string;
+}
+
 export interface AppState {
     user: string;
     lists: TodoList[];
-    activeListId: string;
-    activeListTodos: Todo[];
+    listTodos: Todo[];
+    addTodoView: AddTodoView;
     addListView: AddListView;
     db: Dexie;
 }
@@ -39,9 +44,9 @@ export const defaultAppState: ReducerState = {
     app: {
         user: null,
         lists: [],
-        activeListId: null,
-        activeListTodos: null,
+        listTodos: [],
         addListView: { addListName: "" },
+        addTodoView: { addTodoName: "" },
         db: null
     }
 };
@@ -57,9 +62,7 @@ export function appState(state: ReducerState): AppState {
 // Lenses for the app state can assume the root because of the directory layout
 export const lists: R.Lens = R.lensProp("lists");
 
-export const activeListId = R.lensProp("activeListId");
-
-export const activeListTodos = R.lensProp("activeListTodos");
+export const activeListTodos = R.lensProp("listTodos");
 
 export const user: R.Lens = R.lensProp("user");
 
@@ -68,3 +71,7 @@ export const db: R.Lens = R.lensProp("db");
 export const addListView: R.Lens = R.lensProp("addListView");
 
 export const addListName: R.Lens = R.lensProp("addListName");
+
+export const addTodoView: R.Lens = R.lensProp("addTodoView");
+
+export const addTodoName: R.Lens = R.lensProp("addTodoName");
