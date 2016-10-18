@@ -1,17 +1,23 @@
 <div class="container popout hero">
-    <div class="u-pull-left four columns tall">
-        <ul class="listbox">
-            <li *ngFor="let list of todoLists"><a routerLink="/todos/{{list.id}}" routerLinkActive="active">{{list.name}}</a><button class="button" (click)="dropList$_Sink(list.id)">x</button></li>
-        </ul>
-        <form [formGroup]="addListForm" (ngSubmit)="addList$_Sink($event)">
-            <input formControlName="addListName" type="text" placeholder="name" />
-            <button type="submit" class="button-primary">+</button>
-        </form>
-    </div>
-    <div class="eight columns">
-      <router-outlet></router-outlet>
-    </div>
+  <div class="u-pull-left four columns tall">
+    <h1>Lists</h1>
+    <form [formGroup]="addListForm" (ngSubmit)="addList$_Sink($event)">
+      <div class="input-inline-bbox">
+        <input class="text-field" formControlName="addListName" type="text" placeholder="name" />
+        <button class="button" [disabled]="!addListForm.valid" type="submit"><span class="fa fa-plus-square"></span></button>
+      </div>
+    </form>
+    <ul class="listbox">
+      <li *ngFor="let list of todoLists" class="item-container" [class.deleting]="list.deleting" (animationend)="deleteListComplete$_Sink(list.id)">
+        <a class="item" routerLink="/todos/{{list.id}}" routerLinkActive="active">{{list.name}}</a>
+        <button class="hover-action" (click)="deleteList$_Sink(list.id); $event.stopPropagation()"><span class="fa fa-trash"></span></button>
+      </li>
+    </ul>
+  </div>
+  <div class="eight columns">
+    <router-outlet></router-outlet>
+  </div>
 </div>
-<div class="container">
-  <a (click)="logout$_Sink($event)">Logout</a>
+<div class="container centered">
+  <a class="centered" (click)="logout$_Sink($event)">Logout</a>
 </div>

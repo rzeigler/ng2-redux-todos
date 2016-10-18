@@ -37,7 +37,7 @@ import {NotesService} from "./notes.service";
         StoreDevtoolsModule.instrumentStore({
             maxAge: 5,
             monitor:  useLogMonitor({
-                visible: true,
+                visible: false,
                 position: "right"
             })
         }),

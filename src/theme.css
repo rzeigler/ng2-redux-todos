@@ -1,5 +1,31 @@
+body {
+  font-size: 2rem;
+}
+
+h1 {
+  font-size: 2.4rem;
+}
+
+h2 {
+  font-size: 2.3rem;
+}
+
+/* Set of general attributes */
 .hero {
-  margin-top: 12em;
+  margin-top: 2em;
+}
+
+.tall {
+  min-height: 60vh;
+}
+
+.centered {
+  text-align: center;
+}
+
+.centered-block {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .popout {
@@ -9,18 +35,87 @@
   border-radius: 4px;
 }
 
-.small.container {
-  max-width: 420px;
+label.item {
+  font-weight: 100;
 }
 
-.centered {
-  text-align: center;
-}
-
-.tall {
-  min-height: 60vh;
+label.item.checkbox.completed {
+  text-decoration: line-through;
 }
 
 .listbox li {
   list-style: none;
+}
+
+.listbox .item-container {
+  position: relative;
+  height: 1.6em;
+}
+
+@keyframes fadeOut {
+  from {opacity: 1; height: 1.6em; margin-bottom: 1em}
+  to {opacity: 0; height: 0em; margin-bottom: 0em}
+}
+
+.listbox .item-container.deleting {
+  animation-name: fadeOut;
+  animation-duration: 2s;
+  height: 0em;
+  opacity: 0;
+  margin-bottom: 0em;
+}
+
+.listbox .item-container .hover-action{
+  align-items: center;
+  position: absolute;
+  right: 0px;
+  visibility: hidden;
+}
+
+.listbox .item-container:hover .hover-action {
+  visibility: visible;
+}
+
+.listbox .item-container button.hover-action {
+  padding: 0.2em 0.2em 0.2em 0.2em;
+}
+
+.listbox .item {
+  padding: 0.8rem;
+  margin: 0px;
+  height: 2em;
+  display: inline-block;
+}
+
+.listbox .item.active::before {
+  /* This is the font-awesome code used */
+  display: inline-block;
+  font: normal normal normal 14px/1 FontAwesome;
+  font-size: inherit;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  content: "\f054";
+}
+
+.input-inline-bbox {
+  position: relative;
+  width: 100%;
+}
+
+.input-inline-bbox.short {
+  width: 50%;
+}
+
+.input-inline-bbox .text-field {
+  width: 100%;
+  margin-left: 0.2rem;
+  margin-right: 0.2rem;
+}
+
+.input-inline-bbox .button {
+  border: none;
+  position: absolute;
+  top: 0em;
+  right: 0em;
 }

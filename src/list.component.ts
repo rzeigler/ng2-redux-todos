@@ -5,9 +5,10 @@ import {ActivatedRoute} from "@angular/router";
 import {Store} from "@ngrx/store";
 import {Observable} from "rxjs";
 import {ReactiveComponent, ReactiveSource, bindStore, bindProperty, bindFormValues, second} from "ng2-reactor";
+import {go} from "@ngrx/router-store";
 import Dexie from "dexie";
 import {Action, lensing, logErrorRecovery} from "./reducer.state";
-import {ReducerState, AppState, Todo, appState, db, activeListTodos, addTodoView, addTodoName} from "./app.state";
+import {ReducerState, AppState, Todo, TodoList, appState, db, lists, activeListTodos, addTodoView, addTodoName, listTitleView, deleting} from "./app.state";
 import {NotesService} from "./notes.service";
 
 const addTodoNameView = <R.Lens>R.compose(addTodoView, addTodoName);
@@ -21,12 +22,11 @@ export class ListComponent extends ReactiveComponent {
 
     @ReactiveSource() private addTodo$: Observable<void>;
     @ReactiveSource() private deleteTodo$: Observable<number>;
+    @ReactiveSource() private deleteTodoComplete$: Observable<number>;
     @ReactiveSource() private toggleTodo$: Observable<number>;
 
     constructor(fb: FormBuilder, store: Store<ReducerState>, route: ActivatedRoute, notes: NotesService) {
         super();
-
-        (<any>window).list = this;
 
         this.addTodoForm = fb.group({
             addTodoName: ["", Validators.required]
@@ -45,11 +45,19 @@ export class ListComponent extends ReactiveComponent {
             .takeUntil(this.onDestroy$)
             .subscribe(bindProperty("todos", this));
 
+        appState$.map(state => R.view(listTitleView, state))
+            .distinctUntilChanged()
+            .takeUntil(this.onDestroy$)
+            .subscribe(bindProperty("listTitle", this));
+
         const actions$ = this.loadListTodos$(db$, notes, route)
             .merge(this.editAddTodoName$(this.addTodoForm))
             .merge(this.insertListTodo$(db$, notes, route, this.addTodoForm, this.addTodo$))
-            .merge(this.deleteListTodo$(db$, notes, this.deleteTodo$))
-            .merge(this.toggleListTodo$(db$, appState$,     notes, this.toggleTodo$));
+            .merge(this.deleteListTodo$(appState$, this.deleteTodo$))
+            .merge(this.deleteListTodoFinalize$(db$, notes, this.deleteTodoComplete$))
+            .merge(this.toggleListTodo$(db$, appState$, notes, this.toggleTodo$))
+            .merge(this.updateListTitle$(appState$, route))
+            .merge(this.navigateOnListDelete$(appState$, route));
 
         actions$
             .takeUntil(this.onDestroy$)
@@ -86,16 +94,34 @@ export class ListComponent extends ReactiveComponent {
             .withLatestFrom(data$, second)
             .switchMap(([db, listId, name]) => notes.insertTodo(db, listId, name, false)
                 .catch(logErrorRecovery))
-            .map(todo => lensing(R.over(activeListTodos, R.append(todo))));
+            .map(todo => lensing(R.compose(
+                R.over(activeListTodos, R.append(todo)),
+                R.set(addTodoNameView, "")
+            )));
     }
 
-    private deleteListTodo$(db$: Observable<Dexie>,
-                            notes: NotesService,
-                            deleteTodo$: Observable<number>): Observable<Action> {
+    private deleteListTodo$(appState$: Observable<AppState>, deleteTodo$: Observable<number>): Observable<Action> {
+        const todos$ = appState$.map(s => R.view(activeListTodos, s));
         return deleteTodo$
+            .withLatestFrom(todos$)
+            .switchMap(([id, todos]) => {
+                const todoIndex = R.findIndex((t: Todo) => t.id === id, <Todo[]>todos);
+                if (todoIndex >= 0) {
+                    return Observable.of(lensing(R.set(<R.Lens>R.compose(activeListTodos, R.lensIndex(todoIndex), deleting), true)));
+                } else {
+                    return Observable.empty<Action>();
+                }
+            });
+    }
+
+    private deleteListTodoFinalize$(db$: Observable<Dexie>,
+                            notes: NotesService,
+                            deleteTodoFinalize$: Observable<number>): Observable<Action> {
+        return deleteTodoFinalize$
             .withLatestFrom(db$)
-            .switchMap(([id, db]) => notes.deleteTodo(db, id).catch(logErrorRecovery)
-                .map(R.always(lensing(R.over(activeListTodos, R.filter((todo: Todo) => todo.id !== id)))))
+            .switchMap(([id, db]) =>
+                notes.deleteTodo(db, id).catch(logErrorRecovery)
+                    .map(R.always(lensing(R.over(activeListTodos, R.filter((todo: Todo) => todo.id !== id)))))
             );
     }
 
@@ -115,6 +141,39 @@ export class ListComponent extends ReactiveComponent {
                     .catch(logErrorRecovery);
             });
     }
+
+    private updateListTitle$(appState$: Observable<AppState>, route: ActivatedRoute): Observable<Action> {
+        const lists$ = appState$.map(s => R.view(lists, s))
+            .filter(R.identity)
+            .distinctUntilChanged();
+        return this.onInit$.switchMap(() =>
+            route.params.map(params => +params["list"])
+                .combineLatest(lists$, (listId: number, lists: TodoList[]) => {
+                    const list = R.find(list => list.id === listId, lists);
+                    return lensing(
+                        list ? R.set(listTitleView, list.name) : R.over(listTitleView, R.identity)
+                    );
+                })
+        );
+    }
+
+    private navigateOnListDelete$(appState$, route: ActivatedRoute): Observable<Action> {
+        const lists$ = appState$.map(s => R.view(lists, s))
+            .filter(R.identity)
+            .distinctUntilChanged();
+        return this.onInit$.switchMap(() =>
+            route.params.map(params => +params["list"])
+                .combineLatest(lists$, (listId: number, lists: TodoList[]) => {
+                    const list = R.find(list => list.id === listId, lists);
+                    if (!list) {
+                        return lists.length > 0 ? go(["todos", lists[0].id]) : go(["todos"]);
+                    } else {
+                        return null;
+                    }
+                })
+                .filter(R.identity) // Lazy flatmapping :-)
+        );
+    }
 }
 
 
@@ -123,7 +182,14 @@ export class ListComponent extends ReactiveComponent {
     template: require<string>("./emptylist.component.html")
 })
 export class EmptyListComponent extends ReactiveComponent {
-    constructor() {
+    constructor(store: Store<ReducerState>) {
         super();
+        (<any>window).empty = this;
+        const appState$ = store.map(appState);
+        appState$.map(s => R.view(lists, s))
+            .map((lists: TodoList[]) => lists ? lists.length : 0)
+            .map(R.lt(0))
+            .takeUntil(this.onDestroy$)
+            .subscribe(bindProperty("hasLists", this));
     }
 }

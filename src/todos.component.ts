@@ -4,7 +4,7 @@ import {Component} from "@angular/core";
 import {FormGroup, FormBuilder, Validators} from "@angular/forms";
 import {Store} from "@ngrx/store";
 import Dexie from "dexie";
-import {ReducerState, AppState, TodoList, appState, lists, addListView, addListName, db, user} from "./app.state";
+import {ReducerState, AppState, TodoList, appState, lists, addListView, addListName, db, user, deleting} from "./app.state";
 import {Action, lensing, logErrorRecovery} from "./reducer.state";
 import {NotesService} from "./notes.service";
 import {SessionManager} from "./session.service";
@@ -20,7 +20,8 @@ export class TodosComponent extends ReactiveComponent {
     private addListForm: FormGroup;
 
     @ReactiveSource() private addList$: Observable<void>;
-    @ReactiveSource() private dropList$: Observable<string>;
+    @ReactiveSource() private deleteList$: Observable<number>;
+    @ReactiveSource() private deleteListComplete$: Observable<number>
     @ReactiveSource() private logout$: Observable<void>;
 
     constructor(fb: FormBuilder, notes: NotesService, store: Store<ReducerState>, session: SessionManager) {
@@ -40,12 +41,15 @@ export class TodosComponent extends ReactiveComponent {
             .takeUntil(this.onDestroy$)
             .subscribe(bindFormValues(["addListName"], <any>this.addListForm));
 
+        this.deleteListComplete$.subscribe(v => console.log(v));
+
         const actions$ = this.databaseOpen$(appState$, notes)
             .merge(this.databaseClose$(notes))
             .merge(this.listLoad$(appState$, notes))
             .merge(this.addListEdits$())
             .merge(this.addListSubmits$(appState$, notes))
-            .merge(this.dropListSubmit$(appState$, notes))
+            .merge(this.deleteListSubmit$(appState$, notes))
+            .merge(this.deleteListFinalize$(appState$, notes))
             .merge(this.logoutSubmit$(session));
 
         actions$
@@ -115,9 +119,23 @@ export class TodosComponent extends ReactiveComponent {
             });
     }
 
-    private dropListSubmit$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
+    private deleteListSubmit$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
+        return this.deleteList$
+            .withLatestFrom(appState$.map(s => R.view(lists, s)))
+            .exhaustMap(([id, ls]) => {
+                const listIdx = R.findIndex((l: TodoList) => l.id === id, <TodoList[]>ls);
+                if (listIdx >= 0) {
+                    return Observable.of(lensing(R.set(<R.Lens>R.compose(lists, R.lensIndex(listIdx), deleting), true)))
+                } else {
+                    // Should never happen
+                    return Observable.empty<Action>();
+                }
+            });
+    }
+
+    private deleteListFinalize$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
         const db$: Observable<Dexie> = appState$.map(v => R.view(db, v));
-        return this.dropList$
+        return this.deleteListComplete$
             .withLatestFrom(db$, (id: number, handle: Dexie) => ({ id, handle }))
             .switchMap(data => notes.dropList(data.handle, data.id)
                 .map(R.always(lensing(

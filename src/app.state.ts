@@ -6,6 +6,8 @@ export interface TodoList {
     id: number;
     owner: number;
     name: string;
+
+    deleting: boolean; // To perform less refactoring this is packed in here. Ideally, we would nest a view model + model
 }
 
 export interface Todo {
@@ -15,6 +17,8 @@ export interface Todo {
     name: string;
     notes: string;
     completed: boolean;
+
+    deleting: boolean; // To perform less refactoring this is packed in here. Ideally, we would nest a view model + model
 }
 
 export interface AddListView {
@@ -25,10 +29,15 @@ export interface AddTodoView {
     addTodoName: string;
 }
 
+export interface ListTitleView {
+    listTitle: string;
+}
+
 export interface AppState {
     user: string;
     lists: TodoList[];
     listTodos: Todo[];
+    listTitleView: ListTitleView;
     addTodoView: AddTodoView;
     addListView: AddListView;
     db: Dexie;
@@ -43,8 +52,9 @@ export const defaultAppState: ReducerState = {
     router: null,
     app: {
         user: null,
-        lists: [],
-        listTodos: [],
+        lists: null,
+        listTodos: null,
+        listTitleView: { listTitle: "" },
         addListView: { addListName: "" },
         addTodoView: { addTodoName: "" },
         db: null
@@ -75,3 +85,7 @@ export const addListName: R.Lens = R.lensProp("addListName");
 export const addTodoView: R.Lens = R.lensProp("addTodoView");
 
 export const addTodoName: R.Lens = R.lensProp("addTodoName");
+
+export const listTitleView = <R.Lens>R.compose(R.lensProp("listTitleView"), R.lensProp("listTitle"));
+
+export const deleting = R.lensProp("deleting");

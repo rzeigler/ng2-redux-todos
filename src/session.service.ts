@@ -16,7 +16,7 @@ export class SessionManager {
         return Observable.of(lensing(
             R.compose(
                 R.set(user, null),
-                R.set(lists, []),
+                R.set(lists, null),
                 R.set(activeListTodos, null)
             )
         )).concat(Observable.of(go(["login"])));

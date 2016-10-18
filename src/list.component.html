@@ -1,15 +1,19 @@
 <div>
+  <h2>{{listTitle}}</h2>
+  <form [formGroup]="addTodoForm" (ngSubmit)="addTodo$_Sink($event)">
+    <div class="input-inline-bbox short">
+      <input class="text-field" formControlName="addTodoName" type="text" placeholder="name" />
+      <button class="button" type="submit" [disabled]="!addTodoForm.valid"><span class="fa fa-plus-square"></span></button>
+    </div>
+  </form>
   <ul class="listbox">
-    <li *ngFor="let todo of todos;trackBy:todo?.id" >
-      <label (click)="toggleTodo$_Sink(todo.id)">{{todo.name}}
-        <input type="checkbox" disabled="true" [ngModel]="todo.completed"/>
+    <li *ngFor="let todo of todos" class="item-container" [class.deleting]="todo.deleting" (animationend)="deleteTodoComplete$_Sink(todo.id)">
+      <label class="item checkbox" [class.completed]="todo.completed" (click)="toggleTodo$_Sink(todo.id); $event.stopPropagation()">
+        <input type="checkbox" [ngModel]="todo.completed" (change)="toggleTodo$_Sink(todo.id); $event.stopPropagation()"/>
+        {{todo.name}}
       </label>
-      <!-- This is kept outside to prevent clicks from triggering the toggle -->
-      <button (click)="deleteTodo$_Sink(todo.id)" class="button">x</button>
+      <button class="hover-action" (click)="deleteTodo$_Sink(todo.id); $event.stopPropagation()"><span class="fa fa-trash"></span></button>
     </li>
   </ul>
-  <form [formGroup]="addTodoForm" (ngSubmit)="addTodo$_Sink($event)">
-      <input formControlName="addTodoName" type="text" placeholder="name" />
-      <button type="submit" class="button-primary">+</button>
-  </form>
+
 </div>

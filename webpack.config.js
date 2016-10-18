@@ -15,7 +15,9 @@ module.exports = {
     module: {
         loaders: [
             {test: /\.ts$/, loader: "ts"},
-            {test: /\.html$/, loader: "html?interpolate"}
+            {test: /\.html$/, loader: "html?interpolate"},
+            {test: /\.css$/, loader: "style!css"},
+            {test: /\.(eot|ttf|woff|woff2|svg)(\?v=.*)?$/, loader: "url"}
         ]
     },
     plugins: [
