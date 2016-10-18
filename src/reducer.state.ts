@@ -11,7 +11,7 @@ export interface FnAction extends Action {
     fn: Function;
 }
 
-export function lensing(fn: Function): FnAction {
+export function proxyReducer(fn: Function): FnAction {
     return {
         type: "fn",
         fn

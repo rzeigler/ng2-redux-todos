@@ -5,7 +5,7 @@ import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {Store} from "@ngrx/store";
 import {ReactiveComponent, LifeCycleNotificationEvent, ReactiveSource, second, bindStore} from "ng2-reactor";
 import {ReducerState, appState, user, loginInProgress} from "./app.state";
-import {Action, lensing} from "./reducer.state";
+import {Action, proxyReducer} from "./reducer.state";
 import {SessionManager} from "./session.service";
 
 @Component({
@@ -34,8 +34,8 @@ export class LoginComponent extends ReactiveComponent {
 
     private loginEvents$(session: SessionManager): Observable<Action> {
         return this.submit$.withLatestFrom(this.loginForm.controls["username"].valueChanges, second)
-            .exhaustMap(user => Observable.of(lensing(R.set(loginInProgress, true)))
+            .exhaustMap(user => Observable.of(proxyReducer(R.set(loginInProgress, true)))
                 .concat(session.login(user).delay(1000))
-                .concat(Observable.of(lensing(R.set(loginInProgress, false)))));
+                .concat(Observable.of(proxyReducer(R.set(loginInProgress, false)))));
     }
 }

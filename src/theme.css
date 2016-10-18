@@ -59,7 +59,7 @@ label.item.checkbox.completed {
 
 .listbox .item-container.deleting {
   animation-name: fadeOut;
-  animation-duration: 2s;
+  animation-duration: 0.5s;
   height: 0em;
   opacity: 0;
   margin-bottom: 0em;

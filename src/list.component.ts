@@ -7,7 +7,7 @@ import {Observable} from "rxjs";
 import {ReactiveComponent, ReactiveSource, bindStore, bindProperty, bindFormValues, second} from "ng2-reactor";
 import {go} from "@ngrx/router-store";
 import Dexie from "dexie";
-import {Action, lensing, logErrorRecovery} from "./reducer.state";
+import {Action, proxyReducer, logErrorRecovery} from "./reducer.state";
 import {ReducerState, AppState, Todo, TodoList, appState, db, lists, activeListTodos, addTodoView, addTodoName, listTitleView, deleting} from "./app.state";
 import {NotesService} from "./notes.service";
 
@@ -70,7 +70,7 @@ export class ListComponent extends ReactiveComponent {
             .switchMap(_ =>
                 db$.combineLatest(route.params.map(params => +params["list"]))
                     .switchMap(([handle, listId]) => notes.primaryTodos(<Dexie>handle, listId).catch(logErrorRecovery))
-                    .map(todos => lensing(
+                    .map(todos => proxyReducer(
                         R.set(activeListTodos, todos)
                     ))
             );
@@ -78,7 +78,7 @@ export class ListComponent extends ReactiveComponent {
 
     private editAddTodoName$(form: FormGroup): Observable<Action> {
         return form.controls["addTodoName"].valueChanges
-            .map(value => lensing(R.set(addTodoNameView, value)));
+            .map(value => proxyReducer(R.set(addTodoNameView, value)));
     }
 
     private insertListTodo$(db$: Observable<Dexie>,
@@ -94,7 +94,7 @@ export class ListComponent extends ReactiveComponent {
             .withLatestFrom(data$, second)
             .switchMap(([db, listId, name]) => notes.insertTodo(db, listId, name, false)
                 .catch(logErrorRecovery))
-            .map(todo => lensing(R.compose(
+            .map(todo => proxyReducer(R.compose(
                 R.over(activeListTodos, R.append(todo)),
                 R.set(addTodoNameView, "")
             )));
@@ -107,7 +107,7 @@ export class ListComponent extends ReactiveComponent {
             .switchMap(([id, todos]) => {
                 const todoIndex = R.findIndex((t: Todo) => t.id === id, <Todo[]>todos);
                 if (todoIndex >= 0) {
-                    return Observable.of(lensing(R.set(<R.Lens>R.compose(activeListTodos, R.lensIndex(todoIndex), deleting), true)));
+                    return Observable.of(proxyReducer(R.set(<R.Lens>R.compose(activeListTodos, R.lensIndex(todoIndex), deleting), true)));
                 } else {
                     return Observable.empty<Action>();
                 }
@@ -121,7 +121,7 @@ export class ListComponent extends ReactiveComponent {
             .withLatestFrom(db$)
             .switchMap(([id, db]) =>
                 notes.deleteTodo(db, id).catch(logErrorRecovery)
-                    .map(R.always(lensing(R.over(activeListTodos, R.filter((todo: Todo) => todo.id !== id)))))
+                    .map(R.always(proxyReducer(R.over(activeListTodos, R.filter((todo: Todo) => todo.id !== id)))))
             );
     }
 
@@ -137,7 +137,7 @@ export class ListComponent extends ReactiveComponent {
                 const todo = R.view(activeListTodos, appState)[todoIdx];
                 const completedLens = <R.Lens>R.compose(activeListTodos, R.lensIndex(todoIdx), R.lensProp("completed"));
                 return notes.setTodoCompleteState(<Dexie>db, todo.id, !todo.completed)
-                    .map(R.always(lensing(R.over(completedLens, R.not))))
+                    .map(R.always(proxyReducer(R.over(completedLens, R.not))))
                     .catch(logErrorRecovery);
             });
     }
@@ -150,7 +150,7 @@ export class ListComponent extends ReactiveComponent {
             route.params.map(params => +params["list"])
                 .combineLatest(lists$, (listId: number, lists: TodoList[]) => {
                     const list = R.find(list => list.id === listId, lists);
-                    return lensing(
+                    return proxyReducer(
                         list ? R.set(listTitleView, list.name) : R.over(listTitleView, R.identity)
                     );
                 })

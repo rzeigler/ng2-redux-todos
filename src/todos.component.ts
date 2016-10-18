@@ -5,7 +5,7 @@ import {FormGroup, FormBuilder, Validators} from "@angular/forms";
 import {Store} from "@ngrx/store";
 import Dexie from "dexie";
 import {ReducerState, AppState, TodoList, appState, lists, addListView, addListName, db, user, deleting} from "./app.state";
-import {Action, lensing, logErrorRecovery} from "./reducer.state";
+import {Action, proxyReducer, logErrorRecovery} from "./reducer.state";
 import {NotesService} from "./notes.service";
 import {SessionManager} from "./session.service";
 import {ReactiveComponent, ReactiveSource, second, bindStore, bindProperty, bindProjection, bindFormValues} from "ng2-reactor";
@@ -62,7 +62,7 @@ export class TodosComponent extends ReactiveComponent {
             .exhaustMap(appState => {
                 if (!R.view(db, appState)) {
                     return notes.open()
-                    .map(handle => lensing(R.set(db, handle)))
+                    .map(handle => proxyReducer(R.set(db, handle)))
                     .catch(e => Observable.empty());
                 } else {
                     return Observable.empty();
@@ -85,14 +85,14 @@ export class TodosComponent extends ReactiveComponent {
                 const owner = R.view<any, number>(user, appState);
                 return notes.lists(handle, owner);
             })
-            .map(ls => lensing(
+            .map(ls => proxyReducer(
                 R.set(lists, ls)
             ));
     }
 
     private addListEdits$(): Observable<Action> {
         return this.addListForm.controls["addListName"].valueChanges
-            .map(v => lensing(R.set(addListViewName, v)));
+            .map(v => proxyReducer(R.set(addListViewName, v)));
     }
 
     private addListSubmits$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
@@ -105,7 +105,7 @@ export class TodosComponent extends ReactiveComponent {
                 const owner = R.view<any, string>(user, appState);
                 const name = R.view<any, string>(addListViewName, appState);
                 return notes.insertList(handle, owner, name)
-                    .map(id => lensing(
+                    .map(id => proxyReducer(
                         R.compose(
                             // Reset the addListName to empty
                             R.set(addListViewName, ""),
@@ -123,7 +123,7 @@ export class TodosComponent extends ReactiveComponent {
             .exhaustMap(([id, ls]) => {
                 const listIdx = R.findIndex((l: TodoList) => l.id === id, <TodoList[]>ls);
                 if (listIdx >= 0) {
-                    return Observable.of(lensing(R.set(<R.Lens>R.compose(lists, R.lensIndex(listIdx), deleting), true)))
+                    return Observable.of(proxyReducer(R.set(<R.Lens>R.compose(lists, R.lensIndex(listIdx), deleting), true)))
                 } else {
                     // Should never happen
                     return Observable.empty<Action>();
@@ -136,7 +136,7 @@ export class TodosComponent extends ReactiveComponent {
         return this.deleteListComplete$
             .withLatestFrom(db$, (id: number, handle: Dexie) => ({ id, handle }))
             .switchMap(data => notes.dropList(data.handle, data.id)
-                .map(R.always(lensing(
+                .map(R.always(proxyReducer(
                     R.over(lists, R.filter((list: TodoList) => list.id !== data.id))
                 )))
             )

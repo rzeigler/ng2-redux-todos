@@ -1,7 +1,7 @@
 import * as R from "ramda";
 import {Store} from "@ngrx/store";
 import {AppState} from "./app.state";
-import {lensing} from "./reducer.state";
+import {proxyReducer} from "./reducer.state";
 
 export function persist(store: Store<any>, prefix: string, path: string[]) {
     // Load this first because in many cases we will get the default state immediately upon the subscribe below
@@ -14,7 +14,7 @@ export function persist(store: Store<any>, prefix: string, path: string[]) {
             window.localStorage.setItem(path.join('.'), JSON.stringify(v)));
     // Load initial value
     store.dispatch(
-        lensing(R.assocPath(path, initialValue))
+        proxyReducer(R.assocPath(path, initialValue))
     );
 
 }
