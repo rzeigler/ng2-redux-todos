@@ -20,10 +20,13 @@ const addTodoNameView = <R.Lens>R.compose(addTodoView, addTodoName);
 export class ListComponent extends ReactiveComponent {
     private addTodoForm: FormGroup;
 
-    @ReactiveSource() private addTodo$: Observable<void>;
-    @ReactiveSource() private deleteTodo$: Observable<number>;
-    @ReactiveSource() private deleteTodoComplete$: Observable<number>;
-    @ReactiveSource() private toggleTodo$: Observable<number>;
+    @ReactiveSource() public addTodo$: Observable<void>;
+    @ReactiveSource() public deleteTodo$: Observable<number>;
+    @ReactiveSource() public deleteTodoComplete$: Observable<number>;
+    @ReactiveSource() public toggleTodo$: Observable<number>;
+
+    public todos: Observable<Todo[]>;
+    public listTitle: Observable<string>;
 
     constructor(fb: FormBuilder, store: Store<ReducerState>, route: ActivatedRoute, notes: NotesService) {
         super();
@@ -40,15 +43,12 @@ export class ListComponent extends ReactiveComponent {
             .takeUntil(this.onDestroy$)
             .subscribe(bindFormValues(["addTodoName"], this.addTodoForm));
 
-        appState$.map(state => R.view(activeListTodos, state))
-            .distinctUntilChanged()
-            .takeUntil(this.onDestroy$)
-            .subscribe(bindProperty("todos", this));
 
-        appState$.map(state => R.view(listTitleView, state))
-            .distinctUntilChanged()
-            .takeUntil(this.onDestroy$)
-            .subscribe(bindProperty("listTitle", this));
+        this.todos = appState$.map(state => R.view(activeListTodos, state))
+            .distinctUntilChanged();
+
+        this.listTitle = appState$.map(state => R.view(listTitleView, state))
+            .distinctUntilChanged();
 
         const actions$ = this.loadListTodos$(db$, notes, route)
             .merge(this.editAddTodoName$(this.addTodoForm))

@@ -19,10 +19,12 @@ const addListViewName: R.Lens = <any>R.compose(addListView, addListName);
 export class TodosComponent extends ReactiveComponent {
     private addListForm: FormGroup;
 
-    @ReactiveSource() private addList$: Observable<void>;
-    @ReactiveSource() private deleteList$: Observable<number>;
-    @ReactiveSource() private deleteListComplete$: Observable<number>
-    @ReactiveSource() private logout$: Observable<void>;
+    @ReactiveSource() public addList$: Observable<void>;
+    @ReactiveSource() public deleteList$: Observable<number>;
+    @ReactiveSource() public deleteListComplete$: Observable<number>
+    @ReactiveSource() public logout$: Observable<void>;
+
+    public todoLists: Observable<TodoList[]>;
 
     constructor(fb: FormBuilder, notes: NotesService, store: Store<ReducerState>, session: SessionManager) {
         super();
@@ -33,15 +35,11 @@ export class TodosComponent extends ReactiveComponent {
 
         const appState$ = store.map(appState);
 
-        appState$.map(s => R.view(lists, s))
-            .takeUntil(this.onDestroy$)
-            .subscribe(bindProperty("todoLists", this));
+        this.todoLists = appState$.map(s => R.view(lists, s));
 
         appState$.map(s => R.view(addListView, s))
             .takeUntil(this.onDestroy$)
             .subscribe(bindFormValues(["addListName"], <any>this.addListForm));
-
-        this.deleteListComplete$.subscribe(v => console.log(v));
 
         const actions$ = this.databaseOpen$(appState$, notes)
             .merge(this.databaseClose$(notes))

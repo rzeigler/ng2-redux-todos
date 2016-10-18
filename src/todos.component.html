@@ -8,7 +8,7 @@
       </div>
     </form>
     <ul class="listbox">
-      <li *ngFor="let list of todoLists" class="item-container" [class.deleting]="list.deleting" (animationend)="deleteListComplete$_Sink(list.id)">
+      <li *ngFor="let list of todoLists | async" class="item-container" [class.deleting]="list.deleting" (animationend)="deleteListComplete$_Sink(list.id)">
         <a class="item" routerLink="/todos/{{list.id}}" routerLinkActive="active">{{list.name}}</a>
         <button class="hover-action" (click)="deleteList$_Sink(list.id); $event.stopPropagation()"><span class="fa fa-trash"></span></button>
       </li>

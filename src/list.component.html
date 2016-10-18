@@ -1,5 +1,5 @@
 <div>
-  <h2>{{listTitle}}</h2>
+  <h2>{{listTitle | async}}</h2>
   <form [formGroup]="addTodoForm" (ngSubmit)="addTodo$_Sink($event)">
     <div class="input-inline-bbox short">
       <input class="text-field" formControlName="addTodoName" type="text" placeholder="name" />
@@ -7,7 +7,7 @@
     </div>
   </form>
   <ul class="listbox">
-    <li *ngFor="let todo of todos" class="item-container" [class.deleting]="todo.deleting" (animationend)="deleteTodoComplete$_Sink(todo.id)">
+    <li *ngFor="let todo of todos | async" class="item-container" [class.deleting]="todo.deleting" (animationend)="deleteTodoComplete$_Sink(todo.id)">
       <label class="item checkbox" [class.completed]="todo.completed" (click)="toggleTodo$_Sink(todo.id); $event.stopPropagation()">
         <input type="checkbox" [ngModel]="todo.completed" (change)="toggleTodo$_Sink(todo.id); $event.stopPropagation()"/>
         {{todo.name}}
