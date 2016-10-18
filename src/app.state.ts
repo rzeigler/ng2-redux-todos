@@ -35,6 +35,7 @@ export interface ListTitleView {
 
 export interface AppState {
     user: string;
+    loginInProgress: boolean;
     lists: TodoList[];
     listTodos: Todo[];
     listTitleView: ListTitleView;
@@ -52,6 +53,7 @@ export const defaultAppState: ReducerState = {
     router: null,
     app: {
         user: null,
+        loginInProgress: false,
         lists: null,
         listTodos: null,
         listTitleView: { listTitle: "" },
@@ -68,6 +70,8 @@ export function router(state: ReducerState): RouterState {
 export function appState(state: ReducerState): AppState {
     return state.app;
 }
+
+export const loginInProgress = R.lensProp("loginInProgress");
 
 // Lenses for the app state can assume the root because of the directory layout
 export const lists: R.Lens = R.lensProp("lists");

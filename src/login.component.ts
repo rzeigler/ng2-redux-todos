@@ -4,7 +4,7 @@ import {Component, Inject} from "@angular/core";
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {Store} from "@ngrx/store";
 import {ReactiveComponent, LifeCycleNotificationEvent, ReactiveSource, second, bindStore} from "ng2-reactor";
-import {ReducerState, user} from "./app.state";
+import {ReducerState, appState, user, loginInProgress} from "./app.state";
 import {Action, lensing} from "./reducer.state";
 import {SessionManager} from "./session.service";
 
@@ -15,7 +15,8 @@ import {SessionManager} from "./session.service";
 export class LoginComponent extends ReactiveComponent {
     private loginForm: FormGroup;
 
-    @ReactiveSource() private submit$: Observable<void>;
+    @ReactiveSource() public submit$: Observable<void>;
+    public notInProgress: Observable<boolean>;
 
     constructor(fb: FormBuilder, store: Store<ReducerState>, session: SessionManager) {
         super();
@@ -24,6 +25,8 @@ export class LoginComponent extends ReactiveComponent {
             "username": ["", Validators.required]
         });
 
+        this.notInProgress = store.map(appState).map(s => R.view(loginInProgress, s)).map(R.not);
+
         this.loginEvents$(session)
             .takeUntil(this.onDestroy$)
             .subscribe(bindStore(store));
@@ -31,6 +34,8 @@ export class LoginComponent extends ReactiveComponent {
 
     private loginEvents$(session: SessionManager): Observable<Action> {
         return this.submit$.withLatestFrom(this.loginForm.controls["username"].valueChanges, second)
-            .exhaustMap(session.login);
+            .exhaustMap(user => Observable.of(lensing(R.set(loginInProgress, true)))
+                .concat(session.login(user).delay(1000))
+                .concat(Observable.of(lensing(R.set(loginInProgress, false)))));
     }
 }
