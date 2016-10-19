@@ -123,7 +123,8 @@ export class TodosComponent extends ReactiveComponent {
             .exhaustMap(([id, ls]) => {
                 const listIdx = R.findIndex((l: TodoList) => l.id === id, <TodoList[]>ls);
                 if (listIdx >= 0) {
-                    return Observable.of(proxyReducer(R.set(<R.Lens>R.compose(lists, R.lensIndex(listIdx), deleting), true)))
+                    return Observable.of(proxyReducer(R.set(<R.Lens>R.compose(lists, R.lensIndex(listIdx), deleting), true),
+                                                      {act: "begin deleting list", index: listIdx, id}))
                 } else {
                     // Should never happen
                     return Observable.empty<Action>();
@@ -137,7 +138,8 @@ export class TodosComponent extends ReactiveComponent {
             .withLatestFrom(db$, (id: number, handle: Dexie) => ({ id, handle }))
             .switchMap(data => notes.dropList(data.handle, data.id)
                 .map(R.always(proxyReducer(
-                    R.over(lists, R.filter((list: TodoList) => list.id !== data.id))
+                    R.over(lists, R.filter((list: TodoList) => list.id !== data.id)),
+                    {act: "finalize deleting list", id: data.id}
                 )))
             )
             .catch(logErrorRecovery);
