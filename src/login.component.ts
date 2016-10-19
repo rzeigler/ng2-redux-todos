@@ -34,8 +34,8 @@ export class LoginComponent extends ReactiveComponent {
 
     private loginEvents$(session: SessionManager): Observable<Action> {
         return this.submit$.withLatestFrom(this.loginForm.controls["username"].valueChanges, second)
-            .exhaustMap(user => Observable.of(proxyReducer(R.set(loginInProgress, true)))
+            .exhaustMap(user => Observable.of(proxyReducer(R.set(loginInProgress, true), {act: "set spinner"}))
                 .concat(session.login(user).delay(1000))
-                .concat(Observable.of(proxyReducer(R.set(loginInProgress, false)))));
+                .concat(Observable.of(proxyReducer(R.set(loginInProgress, false), {act: "clear spinner"}))));
     }
 }

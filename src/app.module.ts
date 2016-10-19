@@ -35,7 +35,7 @@ import {NotesService} from "./notes.service";
         ]),
         StoreModule.provideStore({router: routerReducer, app: reducer}, defaultAppState),
         StoreDevtoolsModule.instrumentStore({
-            maxAge: 5,
+            maxAge: 30,
             monitor:  useLogMonitor({
                 visible: false,
                 position: "right"

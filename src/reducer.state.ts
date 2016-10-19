@@ -9,12 +9,14 @@ export interface Action {
 export interface FnAction extends Action {
     type: "fn";
     fn: Function;
+    meta: any;
 }
 
-export function proxyReducer(fn: Function): FnAction {
+export function proxyReducer(fn: Function, meta?: any): FnAction {
     return {
         type: "fn",
-        fn
+        fn,
+        meta
     };
 }
 

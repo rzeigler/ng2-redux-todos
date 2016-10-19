@@ -8,7 +8,7 @@ import {user, lists, activeListTodos, db} from "./app.state";
 @Injectable()
 export class SessionManager {
     login(username): Observable<Action> {
-        return Observable.of(proxyReducer(R.set(user, username)))
+        return Observable.of(proxyReducer(R.set(user, username), {act: "start session", user: username}))
             .concat(Observable.of(go(["todos"])));
     }
 
@@ -18,7 +18,9 @@ export class SessionManager {
                 R.set(user, null),
                 R.set(lists, null),
                 R.set(activeListTodos, null)
-            )
+            ), {
+                act: "clear session",
+            }
         )).concat(Observable.of(go(["login"])));
     }
 }
