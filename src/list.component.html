@@ -7,12 +7,12 @@
     </div>
   </form>
   <ul class="listbox">
-    <li *ngFor="let todo of todos | async" class="item-container" [class.deleting]="todo.deleting" (animationend)="deleteTodoComplete$_Sink(todo.id)">
+    <li *ngFor="let todo of todos | async" class="item-container">
       <label class="item checkbox" [class.completed]="todo.completed" (click)="toggleTodo$_Sink(todo.id); $event.stopPropagation()">
         <input type="checkbox" [ngModel]="todo.completed" (change)="toggleTodo$_Sink(todo.id); $event.stopPropagation()"/>
         {{todo.name}}
       </label>
-      <button class="hover-action" (click)="deleteTodo$_Sink(todo.id); $event.stopPropagation()"><span class="fa fa-trash"></span></button>
+      <button class="hover-action" (click)="deleteTodoComplete$_Sink(todo.id); $event.stopPropagation()"><span class="fa fa-trash"></span></button>
     </li>
   </ul>
 

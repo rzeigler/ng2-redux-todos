@@ -2,25 +2,21 @@ import * as R from "ramda";
 import {Injectable} from "@angular/core";
 import {Observable} from "rxjs";
 import { go } from "@ngrx/router-store";
-import {Action, proxyReducer} from "./reducer.state";
-import {user, lists, activeListTodos, db} from "./app.state";
+import {Action, set, batch} from "./reducer.state";
+import {userPath, listsPath, listTodosPath, dbPath} from "./app.state";
 
 @Injectable()
 export class SessionManager {
     login(username): Observable<Action> {
-        return Observable.of(proxyReducer(R.set(user, username), {act: "start session", user: username}))
+        return Observable.of(set(userPath, username))
             .concat(Observable.of(go(["todos"])));
     }
 
     logout(): Observable<Action> {
-        return Observable.of(proxyReducer(
-            R.compose(
-                R.set(user, null),
-                R.set(lists, null),
-                R.set(activeListTodos, null)
-            ), {
-                act: "clear session",
-            }
+        return Observable.of(batch(
+                set(userPath, null),
+                set(listsPath, null),
+                set(listTodosPath, null)
         )).concat(Observable.of(go(["login"])));
     }
 }

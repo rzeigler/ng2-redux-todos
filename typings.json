@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "dexie": "registry:dt/dexie#0.0.0+20160627023137",
+    "lodash": "registry:npm/lodash#4.0.0+20161015015725",
     "ramda": "registry:npm/ramda#0.21.0+20160531162943"
   }
 }

@@ -7,11 +7,21 @@ import {Observable} from "rxjs";
 import {ReactiveComponent, ReactiveSource, bindStore, bindProperty, bindFormValues, second} from "ng2-reactor";
 import {go} from "@ngrx/router-store";
 import Dexie from "dexie";
-import {Action, proxyReducer, logErrorRecovery} from "./reducer.state";
-import {ReducerState, AppState, Todo, TodoList, appState, db, lists, activeListTodos, addTodoView, addTodoName, listTitleView, deleting} from "./app.state";
+import {Action, set, adjust, batch, deepGet, logErrorRecovery} from "./reducer.state";
+import {
+    ReducerState,
+    AppState,
+    Todo,
+    TodoList,
+    appState,
+    dbPath,
+    listsPath,
+    listTodosPath,
+    addTodoNamePath,
+    addTodoViewPath,
+    listTitleTextPath
+} from "./app.state";
 import {NotesService} from "./notes.service";
-
-const addTodoNameView = <R.Lens>R.compose(addTodoView, addTodoName);
 
 @Component({
     selector: "list",
@@ -36,18 +46,19 @@ export class ListComponent extends ReactiveComponent {
         });
 
         const appState$ = store.map(appState);
-        const db$ = appState$.map(v => R.view(db, v)).filter(R.identity).distinctUntilChanged();
+        const db$ = appState$.map(deepGet(dbPath)).filter(R.identity).distinctUntilChanged();
 
-        appState$.map(state => R.view(addTodoView, state))
+        appState$.map(deepGet(addTodoViewPath))
             .distinctUntilChanged()
             .takeUntil(this.onDestroy$)
             .subscribe(bindFormValues(["addTodoName"], this.addTodoForm));
 
 
-        this.todos = appState$.map(state => R.view(activeListTodos, state))
-            .distinctUntilChanged();
+        this.todos = appState$.map(deepGet(listTodosPath))
+            .distinctUntilChanged()
+            .filter(R.identity)
 
-        this.listTitle = appState$.map(state => R.view(listTitleView, state))
+        this.listTitle = appState$.map(deepGet(listTitleTextPath))
             .distinctUntilChanged();
 
         const actions$ = this.loadListTodos$(db$, notes, route)
@@ -70,15 +81,13 @@ export class ListComponent extends ReactiveComponent {
             .switchMap(_ =>
                 db$.combineLatest(route.params.map(params => +params["list"]))
                     .switchMap(([handle, listId]) => notes.primaryTodos(<Dexie>handle, listId).catch(logErrorRecovery))
-                    .map(todos => proxyReducer(
-                        R.set(activeListTodos, todos)
-                    ))
+                    .map(todos => set(listTodosPath, todos))
             );
     }
 
     private editAddTodoName$(form: FormGroup): Observable<Action> {
         return form.controls["addTodoName"].valueChanges
-            .map(value => proxyReducer(R.set(addTodoNameView, value)));
+            .map(value => set(addTodoNamePath, value));
     }
 
     private insertListTodo$(db$: Observable<Dexie>,
@@ -94,20 +103,20 @@ export class ListComponent extends ReactiveComponent {
             .withLatestFrom(data$, second)
             .switchMap(([db, listId, name]) => notes.insertTodo(db, listId, name, false)
                 .catch(logErrorRecovery))
-            .map(todo => proxyReducer(R.compose(
-                R.over(activeListTodos, R.append(todo)),
-                R.set(addTodoNameView, "")
-            )));
+            .map(todo => batch(
+                adjust(listTodosPath, R.append(todo)),
+                set(addTodoNamePath, "")
+            ));
     }
 
     private deleteListTodo$(appState$: Observable<AppState>, deleteTodo$: Observable<number>): Observable<Action> {
-        const todos$ = appState$.map(s => R.view(activeListTodos, s));
+        const todos$ = appState$.map(deepGet(listTodosPath));
         return deleteTodo$
             .withLatestFrom(todos$)
             .switchMap(([id, todos]) => {
                 const todoIndex = R.findIndex((t: Todo) => t.id === id, <Todo[]>todos);
                 if (todoIndex >= 0) {
-                    return Observable.of(proxyReducer(R.set(<R.Lens>R.compose(activeListTodos, R.lensIndex(todoIndex), deleting), true)));
+                    return Observable.of(set(`${listTodosPath}.${todoIndex}.deleting`, true));
                 } else {
                     return Observable.empty<Action>();
                 }
@@ -121,7 +130,7 @@ export class ListComponent extends ReactiveComponent {
             .withLatestFrom(db$)
             .switchMap(([id, db]) =>
                 notes.deleteTodo(db, id).catch(logErrorRecovery)
-                    .map(R.always(proxyReducer(R.over(activeListTodos, R.filter((todo: Todo) => todo.id !== id)))))
+                    .map(R.always(adjust(listTodosPath, R.filter((todo: Todo) => todo.id !== id))))
             );
     }
 
@@ -133,32 +142,30 @@ export class ListComponent extends ReactiveComponent {
             .withLatestFrom(db$)
             .withLatestFrom(appState$, (array, item) => R.append(item, array))
             .switchMap(([id, db, appState]) => {
-                const todoIdx = R.findIndex((todo: Todo) => todo.id === id, R.view<AppState, Todo[]>(activeListTodos, appState));
-                const todo = R.view(activeListTodos, appState)[todoIdx];
-                const completedLens = <R.Lens>R.compose(activeListTodos, R.lensIndex(todoIdx), R.lensProp("completed"));
+                const todoIdx = R.findIndex((todo: Todo) => todo.id === id, deepGet(listTodosPath, appState));
+                const todo = deepGet(listTodosPath, appState)[todoIdx];
+                const completedPath = `${listTodosPath}.${todoIdx}.completed`;
                 return notes.setTodoCompleteState(<Dexie>db, todo.id, !todo.completed)
-                    .map(R.always(proxyReducer(R.over(completedLens, R.not))))
+                    .map(R.always(adjust(completedPath, R.not)))
                     .catch(logErrorRecovery);
             });
     }
 
     private updateListTitle$(appState$: Observable<AppState>, route: ActivatedRoute): Observable<Action> {
-        const lists$ = appState$.map(s => R.view(lists, s))
+        const lists$ = appState$.map(deepGet(listsPath))
             .filter(R.identity)
             .distinctUntilChanged();
         return this.onInit$.switchMap(() =>
             route.params.map(params => +params["list"])
                 .combineLatest(lists$, (listId: number, lists: TodoList[]) => {
                     const list = R.find(list => list.id === listId, lists);
-                    return proxyReducer(
-                        list ? R.set(listTitleView, list.name) : R.over(listTitleView, R.identity)
-                    );
+                    return list ? set(listTitleTextPath, list.name) : adjust(listTitleTextPath, v => v);
                 })
         );
     }
 
     private navigateOnListDelete$(appState$, route: ActivatedRoute): Observable<Action> {
-        const lists$ = appState$.map(s => R.view(lists, s))
+        const lists$ = appState$.map(deepGet(listsPath))
             .filter(R.identity)
             .distinctUntilChanged();
         return this.onInit$.switchMap(() =>
@@ -186,7 +193,7 @@ export class EmptyListComponent extends ReactiveComponent {
         super();
         (<any>window).empty = this;
         const appState$ = store.map(appState);
-        appState$.map(s => R.view(lists, s))
+        appState$.map(deepGet(listsPath))
             .map((lists: TodoList[]) => lists ? lists.length : 0)
             .map(R.lt(0))
             .takeUntil(this.onDestroy$)

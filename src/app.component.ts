@@ -8,6 +8,6 @@ import {persist} from "./persist.state";
 })
 export class AppComponent {
     constructor(store: Store<any>) {
-        persist(store, 'app', ['user']);
+        persist(store, 'app', 'user');
     }
 }

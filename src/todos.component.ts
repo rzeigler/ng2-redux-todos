@@ -4,13 +4,21 @@ import {Component} from "@angular/core";
 import {FormGroup, FormBuilder, Validators} from "@angular/forms";
 import {Store} from "@ngrx/store";
 import Dexie from "dexie";
-import {ReducerState, AppState, TodoList, appState, lists, addListView, addListName, db, user, deleting} from "./app.state";
-import {Action, proxyReducer, logErrorRecovery} from "./reducer.state";
+import {
+    ReducerState,
+    AppState,
+    TodoList,
+    appState,
+    listsPath,
+    addListNamePath,
+    addListViewPath,
+    dbPath,
+    userPath
+} from "./app.state";
+import {Action, set, adjust, batch, logErrorRecovery, deepGet} from "./reducer.state";
 import {NotesService} from "./notes.service";
 import {SessionManager} from "./session.service";
 import {ReactiveComponent, ReactiveSource, second, bindStore, bindProperty, bindProjection, bindFormValues} from "ng2-reactor";
-
-const addListViewName: R.Lens = <any>R.compose(addListView, addListName);
 
 @Component({
     selector: "todos",
@@ -35,9 +43,10 @@ export class TodosComponent extends ReactiveComponent {
 
         const appState$ = store.map(appState);
 
-        this.todoLists = appState$.map(s => R.view(lists, s));
+        this.todoLists = appState$.map(deepGet(listsPath));
 
-        appState$.map(s => R.view(addListView, s))
+        appState$.map(v =>
+                deepGet(addListViewPath, v))
             .takeUntil(this.onDestroy$)
             .subscribe(bindFormValues(["addListName"], <any>this.addListForm));
 
@@ -56,13 +65,13 @@ export class TodosComponent extends ReactiveComponent {
     }
 
     private databaseOpen$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
-        return <any>this.onInit$
+        return this.onInit$
             .withLatestFrom(appState$, second)
             // Only open the database if it already exists
             .exhaustMap(appState => {
-                if (!R.view(db, appState)) {
+                if (!deepGet(dbPath, appState)) {
                     return notes.open()
-                    .map(handle => proxyReducer(R.set(db, handle)))
+                    .map(handle => set(dbPath, handle))
                     .catch(e => Observable.empty());
                 } else {
                     return Observable.empty();
@@ -75,43 +84,37 @@ export class TodosComponent extends ReactiveComponent {
     }
 
     private listLoad$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
-        const appStateReady$ = appState$.filter(v => Boolean(R.view(db, v)));
+        const appStateReady$ = appState$.filter(v => Boolean(deepGet(dbPath, v)));
         // The first time we have a database after initialization load the lists
         return this.onInit$
             .combineLatest(appStateReady$, second)
             .take(1)
             .exhaustMap(appState => {
-                const handle = R.view<any, Dexie>(db, appState);
-                const owner = R.view<any, number>(user, appState);
+                const handle = deepGet(dbPath, appState);
+                const owner = deepGet(userPath, appState);
                 return notes.lists(handle, owner);
             })
-            .map(ls => proxyReducer(
-                R.set(lists, ls)
-            ));
+            .map(ls => set(listsPath, ls));
     }
 
     private addListEdits$(): Observable<Action> {
         return this.addListForm.controls["addListName"].valueChanges
-            .map(v => proxyReducer(R.set(addListViewName, v)));
+            .map(v => set(addListNamePath, v));
     }
 
     private addListSubmits$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
-        const name$ = appState$.map(v => R.view(addListViewName, v));
-        const db$ = appState$.map(v => R.view(db, v));
+        const name$ = appState$.map(deepGet(addListNamePath));
+        const db$ = appState$.map(deepGet(dbPath));
         return this.addList$
             .withLatestFrom(appState$, second)
             .switchMap(appState => {
-                const handle = R.view<any, Dexie>(db, appState);
-                const owner = R.view<any, string>(user, appState);
-                const name = R.view<any, string>(addListViewName, appState);
+                const handle = deepGet(dbPath, appState);
+                const owner = deepGet(userPath, appState);
+                const name = deepGet(addListNamePath, appState);
                 return notes.insertList(handle, owner, name)
-                    .map(id => proxyReducer(
-                        R.compose(
-                            // Reset the addListName to empty
-                            R.set(addListViewName, ""),
-                            // Append the list to the set
-                            R.over(lists, R.append({id, owner, name}))
-                        )
+                    .map(id => batch(
+                        set(addListNamePath, ""),
+                        adjust(listsPath, R.append({id, owner, name}))
                     ))
                     .catch(logErrorRecovery);
             });
@@ -119,12 +122,11 @@ export class TodosComponent extends ReactiveComponent {
 
     private deleteListSubmit$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
         return this.deleteList$
-            .withLatestFrom(appState$.map(s => R.view(lists, s)))
+            .withLatestFrom(appState$.map(deepGet(listsPath)))
             .exhaustMap(([id, ls]) => {
                 const listIdx = R.findIndex((l: TodoList) => l.id === id, <TodoList[]>ls);
                 if (listIdx >= 0) {
-                    return Observable.of(proxyReducer(R.set(<R.Lens>R.compose(lists, R.lensIndex(listIdx), deleting), true),
-                                                      {act: "begin deleting list", index: listIdx, id}))
+                    return Observable.of(set(`${listsPath}.${listIdx}.deleting`, true) )
                 } else {
                     // Should never happen
                     return Observable.empty<Action>();
@@ -133,14 +135,11 @@ export class TodosComponent extends ReactiveComponent {
     }
 
     private deleteListFinalize$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {
-        const db$: Observable<Dexie> = appState$.map(v => R.view(db, v));
+        const db$: Observable<Dexie> = appState$.map(deepGet(dbPath));
         return this.deleteListComplete$
             .withLatestFrom(db$, (id: number, handle: Dexie) => ({ id, handle }))
             .switchMap(data => notes.dropList(data.handle, data.id)
-                .map(R.always(proxyReducer(
-                    R.over(lists, R.filter((list: TodoList) => list.id !== data.id)),
-                    {act: "finalize deleting list", id: data.id}
-                )))
+                .map(R.always(adjust(listsPath, R.filter((list: TodoList) => list.id !== data.id))))
             )
             .catch(logErrorRecovery);
     }

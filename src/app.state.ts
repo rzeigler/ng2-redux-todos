@@ -71,25 +71,13 @@ export function appState(state: ReducerState): AppState {
     return state.app;
 }
 
-export const loginInProgress = R.lensProp("loginInProgress");
-
-// Lenses for the app state can assume the root because of the directory layout
-export const lists: R.Lens = R.lensProp("lists");
-
-export const activeListTodos = R.lensProp("listTodos");
-
-export const user: R.Lens = R.lensProp("user");
-
-export const db: R.Lens = R.lensProp("db");
-
-export const addListView: R.Lens = R.lensProp("addListView");
-
-export const addListName: R.Lens = R.lensProp("addListName");
-
-export const addTodoView: R.Lens = R.lensProp("addTodoView");
-
-export const addTodoName: R.Lens = R.lensProp("addTodoName");
-
-export const listTitleView = <R.Lens>R.compose(R.lensProp("listTitleView"), R.lensProp("listTitle"));
-
-export const deleting = R.lensProp("deleting");
+export const userPath = "user";
+export const loginInProgressPath = "loginInProgress";
+export const listsPath = "lists";
+export const listTodosPath = "listTodos";
+export const listTitleTextPath = "listTitleView.listTitle";
+export const addListViewPath = "addListView";
+export const addListNamePath = "addListView.addListName";
+export const addTodoViewPath = "addTodoView";
+export const addTodoNamePath = "addTodoView.addTodoName";
+export const dbPath = "db";
