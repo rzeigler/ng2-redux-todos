@@ -4,10 +4,10 @@ import {FormGroup, FormBuilder, Validators} from "@angular/forms";
 import {ActivatedRoute} from "@angular/router";
 import {Store} from "@ngrx/store";
 import {Observable} from "rxjs";
-import {ReactiveComponent, ReactiveSource, bindStore, bindProperty, bindFormValues, second} from "ng2-reactor";
+import {ReactiveComponent, ReactiveSource, bindFormValues, second} from "ng2-reactor";
 import {go} from "@ngrx/router-store";
 import Dexie from "dexie";
-import {Action, set, adjust, batch, deepGet, logErrorRecovery} from "./reducer.state";
+import {Action, set, adjust, batch, deepGet, logErrorRecovery, dispatch} from "./reducer.state";
 import {
     ReducerState,
     AppState,
@@ -51,7 +51,7 @@ export class ListComponent extends ReactiveComponent {
         appState$.map(deepGet(addTodoViewPath))
             .distinctUntilChanged()
             .takeUntil(this.onDestroy$)
-            .subscribe(bindFormValues(["addTodoName"], this.addTodoForm));
+            .subscribe(bindFormValues(this.addTodoForm));
 
 
         this.todos = appState$.map(deepGet(listTodosPath))
@@ -72,7 +72,7 @@ export class ListComponent extends ReactiveComponent {
 
         actions$
             .takeUntil(this.onDestroy$)
-            .subscribe(bindStore(store));
+            .subscribe(dispatch(store));
     }
 
     private loadListTodos$(db$: Observable<Dexie>, notes: NotesService, route: ActivatedRoute): Observable<Action> {
@@ -189,14 +189,12 @@ export class ListComponent extends ReactiveComponent {
     template: require<string>("./emptylist.component.html")
 })
 export class EmptyListComponent extends ReactiveComponent {
+    hasLists: Observable<boolean>
     constructor(store: Store<ReducerState>) {
         super();
-        (<any>window).empty = this;
         const appState$ = store.map(appState);
-        appState$.map(deepGet(listsPath))
+        this.hasLists = appState$.map(deepGet(listsPath))
             .map((lists: TodoList[]) => lists ? lists.length : 0)
-            .map(R.lt(0))
-            .takeUntil(this.onDestroy$)
-            .subscribe(bindProperty("hasLists", this));
+            .map(R.lt(0));
     }
 }

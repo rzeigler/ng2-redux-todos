@@ -1,4 +1,4 @@
 <div>
-  <span [hidden]="!hasLists">Select a list from the left</span>
-  <span [hidden]="hasLists">Create a list to begin</span>
+  <span [hidden]="!hasLists | async">Select a list from the left</span>
+  <span [hidden]="hasLists | async">Create a list to begin</span>
 </div>

@@ -102,9 +102,7 @@ export const deepSet = R.curry((p: string[] | string, value: any, source: any): 
 export const deepAdjust = R.curry((path: string[] | string, adjuster: (any) => any, source: any): any => {
     const start = deepGet(path, source);
     const value = adjuster(start);
-    const result = deepSet(path, value, source);
-    console.log(result);
-    return result;
+    return deepSet(path, value, source);
 })
 
 export function reducer(state: AppState, action: ReducerAction): AppState {

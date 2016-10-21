@@ -45,7 +45,7 @@
     "express": "^4.14.0",
     "lodash": "^4.16.4",
     "moment": "^2.15.1",
-    "ng2-reactor": "0.1.1",
+    "ng2-reactor": "0.2.0",
     "ngrx-store-logger": "^0.1.7",
     "ramda": "^0.22.1",
     "reflect-metadata": "^0.1.8",

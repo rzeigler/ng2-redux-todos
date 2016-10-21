@@ -4,6 +4,7 @@ import {Component} from "@angular/core";
 import {FormGroup, FormBuilder, Validators} from "@angular/forms";
 import {Store} from "@ngrx/store";
 import Dexie from "dexie";
+import {ReactiveComponent, ReactiveSource, second, bindFormValues} from "ng2-reactor";
 import {
     ReducerState,
     AppState,
@@ -15,10 +16,9 @@ import {
     dbPath,
     userPath
 } from "./app.state";
-import {Action, set, adjust, batch, logErrorRecovery, deepGet} from "./reducer.state";
+import {Action, set, adjust, batch, logErrorRecovery, deepGet, dispatch} from "./reducer.state";
 import {NotesService} from "./notes.service";
 import {SessionManager} from "./session.service";
-import {ReactiveComponent, ReactiveSource, second, bindStore, bindProperty, bindProjection, bindFormValues} from "ng2-reactor";
 
 @Component({
     selector: "todos",
@@ -48,7 +48,7 @@ export class TodosComponent extends ReactiveComponent {
         appState$.map(v =>
                 deepGet(addListViewPath, v))
             .takeUntil(this.onDestroy$)
-            .subscribe(bindFormValues(["addListName"], <any>this.addListForm));
+            .subscribe(bindFormValues(this.addListForm));
 
         const actions$ = this.databaseOpen$(appState$, notes)
             .merge(this.databaseClose$(notes))
@@ -61,7 +61,7 @@ export class TodosComponent extends ReactiveComponent {
 
         actions$
             .takeUntil(this.onDestroy$)
-            .subscribe(bindStore(store));
+            .subscribe(dispatch(store));
     }
 
     private databaseOpen$(appState$: Observable<AppState>, notes: NotesService): Observable<Action> {

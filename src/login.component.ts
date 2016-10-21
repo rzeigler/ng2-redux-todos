@@ -3,9 +3,9 @@ import {Observable} from "rxjs";
 import {Component, Inject} from "@angular/core";
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {Store} from "@ngrx/store";
-import {ReactiveComponent, LifeCycleNotificationEvent, ReactiveSource, second, bindStore} from "ng2-reactor";
+import {ReactiveComponent, LifeCycleNotificationEvent, ReactiveSource, second} from "ng2-reactor";
 import {ReducerState, appState, userPath, loginInProgressPath} from "./app.state";
-import {Action, set, adjust, batch, deepGet} from "./reducer.state";
+import {Action, set, adjust, batch, deepGet, dispatch} from "./reducer.state";
 import {SessionManager} from "./session.service";
 
 @Component({
@@ -29,7 +29,7 @@ export class LoginComponent extends ReactiveComponent {
 
         this.loginEvents$(session)
             .takeUntil(this.onDestroy$)
-            .subscribe(bindStore(store));
+            .subscribe(dispatch(store));
     }
 
     private loginEvents$(session: SessionManager): Observable<Action> {
